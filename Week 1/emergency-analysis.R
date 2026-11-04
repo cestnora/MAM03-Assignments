@@ -1,5 +1,5 @@
 # Add packages here
-packages<- c('xtable', 'ggplot2')
+packages<- c('xtable', 'ggplot2', 'numDeriv')
 
 # Install and load packages
 lapply(packages, install.packages)
@@ -84,5 +84,79 @@ ggplot(hist_data, aes(x=recorded_time, fill = indicator))+
 # Note: Data is right skewed
 
 ###############################################################################
+
+###############################################################################
+# Q5 Bootstrap
+seed = 42
+set.seed(seed)
+
+lambda_hat = sum(data$indicator==1) / sum(data$recorded_time)
+
+B = 2000
+n = nrow(data)
+boot = replicate(B,
+                 {
+                   index = sample.int(n, size = n, replace = TRUE)
+                   dboot = data[index,]
+                   sum(dboot$indicator==1) / sum(dboot$recorded_time)
+                 }) 
+summary(t(boot))
+se_boot <- sd(boot)
+ci_boot <- quantile(boot, c(0.025, 0.975))
+mean(boot)
+
+se_boot
+ci_boot
+
+boot_mean <- 1/boot
+se_mean <-sd(boot_mean)
+ci_mean <- quantile(boot_mean, c(0.025, 0.975))
+
+dens <- density(boot_mean, from=0)
+density_df = data.frame(x=dens$x, y=dens$y)
+shade_df = density_df[density_df$x >= ci_mean[1] & density_df$x <= ci_mean[2],]
+nf_percentile = density_df[density_df$x<ci_mean[1] | density_df$x>ci_mean[2],]
+
+ggplot(density_df, aes(x=x, y=y))+
+  geom_area(
+    data=shade_df,
+    aes(fill='center'),
+    alpha=0.8
+    )+
+  geom_area(
+    data=density_df[density_df$x<ci_mean[1],],
+    aes(fill='tail'),
+    alpha=0.8
+  )+
+  geom_area(
+    data=density_df[density_df$x>ci_mean[2],],
+    aes(fill='tail'),
+    alpha=0.8
+  )+
+  geom_line(linewidth=1)+
+  geom_vline(
+    xintercept=1/lambda_hat,
+    colour='darkorange',
+    linewidth=0.5,
+    linetype='dashed'
+  )+
+  annotate('text', x=1/lambda_hat, y=0.5, label='original mean estimate')+
+  scale_fill_manual(
+    name = 'Bootstrap regions',
+    values = c(
+      'center' = 'blue',
+      'tail' = 'red'
+    ),
+    breaks = c('center', 'tail'),
+    labels = c("Central 95%", "Tails: 5%")
+  ) +
+  scale_x_continuous(
+    breaks = scales::breaks_width(1),
+    labels = function(x) paste0(x, 'h')
+  )+
+  ggtitle('Bootstrap distribution of mean waiting time (2000 replications)')+
+  xlab('Mean waiting-time')+
+  ylab('Density')
+  
 
 
