@@ -159,7 +159,7 @@ mi_data <- d %>% select(-participant_id, -barthel_missing)
 method <- mice::make.method(mi_data); method[] <- ""; method["baseline_barthel"] <- "pmm"
 pred <- mice::make.predictorMatrix(mi_data); pred[,] <- 0
 pred["baseline_barthel", setdiff(names(mi_data), "baseline_barthel")] <- 1
-imp <- mice(mi_data, m = 30, maxit = 20, method = method,
+imp <- mice(mi_data, m = 25, maxit = 50, method = method,
             predictorMatrix = pred, seed = 2026, printFlag = FALSE)
 print(imp$loggedEvents)
 plot(imp)                                  # trace/convergence plot: display only
