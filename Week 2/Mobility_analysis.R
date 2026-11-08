@@ -54,18 +54,18 @@ row_n_pct <- function(df, var)
   label<-var #Keep the name of the variable
   if (var == 'Male' | var == 'Female'){
     col <- 'sex'
-    }
+  }
   else{
     col <- var
     var <- 1 #Look for true values in dataframe
-    }
+  }
   
   df <- add_row(df, 
                 Variable = paste0(label, " n (%)"),
                 Overall = n_pct(d[[col]], var),
                 `Previous fall` = n_pct(fall[[col]], var),
                 `No previous fall` = n_pct(no_fall[[col]], var)
-                )
+  )
 }
 
 # Make the baseline table
@@ -90,14 +90,14 @@ table_df <- add_row(table_df,
                     Overall = median_iqr(d$baseline_barthel),
                     `Previous fall` = median_iqr(fall$baseline_barthel),
                     `No previous fall` = median_iqr(no_fall$baseline_barthel)
-                    )
+)
 
 table_df <- add_row(table_df,
                     Variable = 'Missing Barthel index n (%)',
                     Overall = n_pct(d$baseline_barthel, NA),
                     `Previous fall` = n_pct(fall$baseline_barthel, NA),
                     `No previous fall` = n_pct(no_fall$baseline_barthel, NA)
-                    )
+)
 
 # Count the participants of the whole dataset, participants with previous falls and participants without previous falls.
 n_overall <- nrow(d)
@@ -112,38 +112,51 @@ xtable(table_df)
 # Regression analysis
 d_na <- d[is.na(d$baseline_barthel),]    # NA cases
 d_cpl <- d[!is.na(d$baseline_barthel),] # Complete cases
-m_tug_compl <- lm(followup_tug ~ baseline_barthel, data=d_cpl)
-summary(m_tug_compl)
 
-plot(d$baseline_barthel, d$followup_tug)
-abline(m_tug_compl, col='red')
+# Simple linear regression TUG ~ barthel on complete cases
+m1_tug <- lm(followup_tug ~ baseline_barthel, data=d_cpl)
+summary(m1_tug)
 
+m2_tug_adj <- lm(followup_tug ~ baseline_barthel + age + sex + previous_fall + living_alone, data=d_cpl)
+summary(m2_tug_adj)
 
-# Explore missingness of baseline_barthel
-sum(is.na(d$baseline_barthel))
+# Splines TUG ~ barthel on complete cases
+spline_barthel <- ns(d_cpl$baseline_barthel, df = 3)
+knots_barthel = attr(spline_barthel, "knots")
+bk_barthel = attr(spline_barthel, "Boundary.knots")
 
-summary(na_df)
-summary(obs_df)
+m3_tug_spline <- lm(followup_tug ~ spline_barthel, data=d_cpl)
+summary(m3_tug_spline)
 
-d$barthel_na <- as.integer(is.na(d$baseline_barthel))
-miss_model <- glm(barthel_na ~ age + sex + living_alone + previous_fall + walking_aid, data=d, family=binomial)
-summary(miss_model)
-miss_odds <- exp(cbind(OR=coef(miss_model), confint(miss_model)))
+m4_tug_spline_adj <- lm(followup_tug ~ spline_barthel + age + sex + previous_fall + living_alone, data=d_cpl)
+summary(m4_tug_spline_adj)
 
+# Compare the 4 models
+# Does a spline improve the unadjusted model?
+anova(m1_tug, m3_tug_spline)
+# Does a spline improve the adjusted model?
+anova(m2_tug_adj, m4_tug_spline_adj)
+# Do covariates improve fit in a linear model?
+anova(m1_tug, m2_tug_adj)
+# Do covariates improve fit in a non-linear model?
+anova(m3_tug_spline, m4_tug_spline_adj)
 
+AIC(m1_tug)
+AIC(m2_tug_adj)
+AIC(m3_tug_spline)
+AIC(m4_tug_spline_adj)
 
+################################################################################  
+# Impute missing data
 imp <- mice(d, m=25, maxit=50)
-results <- list()
+results = list()
 for(k in 1:25)
 {
   tmp <- complete(imp, k)
-  results[[k]] <- glm(baseline_barthel~followup_tug, data=tmp)
+  X = ns(tmp$baseline_barthel, knots=knots_barthel, Boundary.knots=bk_barthel)
+  results[[k]] <- lm(tmp$followup_tug ~ X + tmp$age + tmp$sex + tmp$previous_fall, tmp$living_alone)
 }
 
 est <- pool(results)
-summary(est)
-m1 <- lm(d$baseline_barthel ~ d$followup_tug)
-summary(m1)
+summary(est, conf.int=TRUE)
 
-m2 <- lm(d$baseline_barthel ~ d$fall_followup)
-summary(m2)
