@@ -265,8 +265,7 @@ curve_plot <- ggplot(curves, aes(Barthel, est, colour = Analysis, fill = Analysi
   geom_line(linewidth = .8) +
   facet_wrap(~Outcome, scales = "free_y", nrow = 1) +
   scale_x_continuous(breaks = seq(50, 100, 10), limits = c(50, 100)) +
-  labs(x = "Baseline Barthel Index", y = "Adjusted prediction",
-       caption = "Pointwise 95% confidence intervals; covariates held at the reference profile.") +
+  labs(x = "Baseline Barthel Index", y = "Adjusted prediction") +
   theme_minimal() + theme(legend.title = element_blank())
 print(curve_plot)
 ggsave("Figure1_adjusted_Barthel_curves_revised.png", curve_plot,
