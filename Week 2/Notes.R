@@ -42,7 +42,7 @@ plot(d4$time, x[,3], type='p', pch=6)
 d <- mice::nhanes
 head(d)
 
-d$hyp <- factor(d$hyp) #change variable to categorial
+d$hyp <- factor(d$hyp) #change variable to categorical
 imp <- mice(d, maxit=50)
 d1 <- complete(imp,1)
 d2 <- complete(imp,2)
