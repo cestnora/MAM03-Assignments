@@ -268,7 +268,7 @@ curve_plot <- ggplot(curves, aes(Barthel, est, colour = Analysis, fill = Analysi
   labs(x = "Baseline Barthel Index", y = "Adjusted prediction") +
   theme_minimal() + theme(legend.title = element_blank())
 print(curve_plot)
-ggsave("Figure1_adjusted_Barthel_curves_revised.png", curve_plot,
+ggsave("Figure1_adjusted_Barthel_curves.png", curve_plot,
        width = 8.5, height = 4.2, dpi = 300)
 
 cc_tug_points <- cc_predict(tug_adj_spline, newdata(scores))
