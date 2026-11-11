@@ -1,3 +1,4 @@
+install.packages('ggplot2movies')
 library(ggplot2movies)
 library(splines)
 library(mice)
